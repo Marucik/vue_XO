@@ -1,14 +1,18 @@
 const { randomizeSymbol } = require('./functions/xo')
 const { checkFields } = require('./functions/xo')
+let allConnections = []
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
+    allConnections.push(socket.id)
     socket.on('disconnect', () => {
       console.log(socket.id + ' disconected')
+      let index = allConnections.indexOf(socekt.io);
+      delete allConnections[index];
     })
 
     //assign room instance to variable
-    var roomData = io.sockets.adapter.rooms   
+    var roomData = io.sockets.adapter.rooms
 
     socket.on('join-room', (roomName, userName) => {
       socket.join(roomName)
@@ -22,7 +26,7 @@ module.exports = (io) => {
         }
       }
 
-      //adding new player to
+      //adding new player to game obj
       roomData[roomName].game.players[socket.id] = {
         nick: userName,
         mark: ''
@@ -31,22 +35,23 @@ module.exports = (io) => {
       //checking number of players
       io.in(roomName).clients((error, clients) => {
         if ( error ) throw error
+        let players = roomData[roomName].game.players;
         let symbols = randomizeSymbol()
         if (clients.length >= 2) {
-          for (let i = 0; i <= 1; i++) {
-            io.to(clients[i]).emit('symbolFromServer', symbols[i])
-            roomData[roomName].game.players[clients[i]].mark = symbols[i]
-          }
-          console.log(roomData[roomName].game.players)
-          io.in(roomName).emit('roomPlayers', roomData[roomName].game.players)
+          symbols.forEach((symbols, index) => {
+            io.to(clients[index]).emit('symbolFromServer', symbols)
+            players[clients[index]].mark = symbols
+          });
+          console.log(players)
+          io.in(roomName).emit('roomPlayers', players)
         }
-      })     
+      })
     })
 
     //deleting player from room after leave
     socket.on('leaveRoom', (roomName) => {
       console.log(socket.id + ' deleted from room after leave')
-      if(roomData[roomName]) delete roomData[roomName].game.players[socket.id]      
+      if(roomData[roomName]) delete roomData[roomName].game.players[socket.id]
       socket.leave(roomName)
      })
 
@@ -61,6 +66,10 @@ module.exports = (io) => {
         if ( winner ) {
           io.in(roomName).emit('freezePlayers')
           io.in(roomName).emit('annouceWinner', winner)
+        }
+        if ( !winner && gameObj.moves >= 9) {
+          io.in(roomName).emit('freezePlayers')
+          io.in(roomName).emit('annouceTie')
         }
       }
     })

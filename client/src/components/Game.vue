@@ -2,13 +2,14 @@
 <div class="game">
     <h1>Game</h1>
     <h2 v-if="this.winner">The winner is: {{ this.winner }}</h2>
+    <h2 v-if="this.tie">Game is tied!</h2>
     <h2 v-if="!this.symbol">Waiting for player to join</h2>
     <h3 v-if="this.symbol">Players:</h3>
     <div>
       <span v-for="player in players" v-bind:key="player.nick">
         {{ player.nick }}: <i>{{ player.mark }}</i>
       </span>
-    </div>    
+    </div>
     <checkerboard v-if="this.symbol" :symbol="symbol" :room="room"></checkerboard>
     <br>
     <router-link :to="{name: 'Main'}"><button @click="leaveRoom">Back</button></router-link>
@@ -29,7 +30,8 @@ export default {
       players: {},
       room: this.$route.params.room,
       symbol: '',
-      winner: ''
+      winner: '',
+      tie: false
     }
   },
   mounted () {
@@ -56,7 +58,10 @@ export default {
       this.players = players
     },
     annouceWinner (winner) {
-      this.winner = winner  
+      this.winner = winner
+    },
+    annouceTie () {
+      this.tie = true
     }
   }
 }
